@@ -42,7 +42,7 @@
   <main class="wrap">
     <div class="brand">Te Pareva L'APP · Scanner live</div>
     <h1>Scanner barcode</h1>
-    <p class="sub">Test HTTPS isolato. La fotocamera viene elaborata sul dispositivo e questa pagina non accede all'inventario.</p>
+    <p class="sub">La fotocamera viene elaborata sul dispositivo. Questa pagina non accede all'inventario e restituisce soltanto il barcode letto.</p>
 
     <section class="card">
       <div class="videoBox">
@@ -69,13 +69,19 @@
         <div id="resultCode" class="code"></div>
       </div>
 
-      <p class="note">Versione scanner host 1.9.2-test. Nessuna scrittura, nessun caricamento inventario, nessuna immagine salvata.</p>
+      <p class="note">Scanner host 1.9.2. Nessuna scrittura, nessun caricamento inventario, nessuna immagine salvata.</p>
     </section>
   </main>
 
 <script>
 (() => {
   'use strict';
+
+  const TRUSTED_RETURN_HOSTS = ['script.google.com', 'script.googleusercontent.com'];
+  const MESSAGE_TYPE = 'TE_PAREVA_BARCODE';
+  const params = new URLSearchParams(window.location.search);
+  const requestedReturnUrl = String(params.get('return') || '').trim();
+  const state = String(params.get('state') || '').trim();
 
   const preview = document.getElementById('preview');
   const statusEl = document.getElementById('status');
@@ -93,6 +99,17 @@
 
   function normalize(value) {
     return String(value || '').trim().replace(/[^0-9A-Za-z]/g, '');
+  }
+
+  function getSafeReturnUrl() {
+    if (!requestedReturnUrl) return '';
+    try {
+      const url = new URL(requestedReturnUrl);
+      if (url.protocol !== 'https:' || !TRUSTED_RETURN_HOSTS.includes(url.hostname)) return '';
+      return url.toString();
+    } catch (_) {
+      return '';
+    }
   }
 
   function setStatus(message, type) {
@@ -122,6 +139,47 @@
     if (message) setStatus(message);
   }
 
+  function buildReturnUrl(baseUrl, code, origin) {
+    const url = new URL(baseUrl);
+    url.searchParams.set('scannerBarcode', code);
+    url.searchParams.set('scannerOrigin', origin);
+    if (state) url.searchParams.set('scannerState', state);
+    return url.toString();
+  }
+
+  function deliverCode(code, origin) {
+    const payload = { type: MESSAGE_TYPE, code, origin, state };
+    let openerNotified = false;
+
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(payload, '*');
+        openerNotified = true;
+      }
+    } catch (_) {}
+
+    const safeReturnUrl = getSafeReturnUrl();
+
+    if (openerNotified) {
+      setStatus('Barcode letto. Ritorno a Te Pareva L\'APP…', 'ok');
+      window.setTimeout(() => {
+        try { window.close(); } catch (_) {}
+        window.setTimeout(() => {
+          if (!window.closed && safeReturnUrl) window.location.replace(buildReturnUrl(safeReturnUrl, code, origin));
+        }, 350);
+      }, 250);
+      return;
+    }
+
+    if (safeReturnUrl) {
+      setStatus('Barcode letto. Ritorno a Te Pareva L\'APP…', 'ok');
+      window.setTimeout(() => window.location.replace(buildReturnUrl(safeReturnUrl, code, origin)), 300);
+      return;
+    }
+
+    setStatus('Barcode letto correttamente da ' + origin + '.', 'ok');
+  }
+
   function acceptCode(raw, origin) {
     const code = normalize(raw);
     if (!code || accepted) return;
@@ -129,9 +187,9 @@
     resultCode.textContent = code;
     resultBox.classList.add('show');
     manualCode.value = code;
-    setStatus('Barcode letto correttamente da ' + origin + '.', 'ok');
     try { navigator.vibrate && navigator.vibrate(120); } catch (_) {}
     stopScanner();
+    deliverCode(code, origin);
   }
 
   async function startScanner() {
