@@ -8,304 +8,53 @@
   <script src="https://unpkg.com/@zxing/browser@0.2.1/umd/zxing-browser.min.js"></script>
   <style>
     :root{--red:#b52a1f;--ink:#241f1b;--cream:#f7f1e8;--line:#dfd4c7;--ok:#e8f5ee;--okline:#87bea1;--bad:#fff0ef;--badline:#dca5a0}
-    *{box-sizing:border-box}
-    html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--cream);color:var(--ink)}
-    body{padding:max(18px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
-    .wrap{width:min(720px,100%);margin:0 auto}
-    .brand{font-weight:900;letter-spacing:.04em;color:var(--red);font-size:14px;text-transform:uppercase;margin:8px 2px 4px}
-    h1{font-size:30px;line-height:1.08;margin:4px 2px 8px}
-    .sub{margin:0 2px 18px;color:#6e6259;line-height:1.45}
+    *{box-sizing:border-box} html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--cream);color:var(--ink)}
+    body{padding:max(18px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}.wrap{width:min(720px,100%);margin:0 auto}
+    .brand{font-weight:900;letter-spacing:.04em;color:var(--red);font-size:14px;text-transform:uppercase;margin:8px 2px 4px}h1{font-size:30px;line-height:1.08;margin:4px 2px 8px}.sub{margin:0 2px 18px;color:#6e6259;line-height:1.45}
     .card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:16px;box-shadow:0 8px 28px rgba(60,43,30,.08)}
-    .videoBox{position:relative;overflow:hidden;border-radius:20px;background:#171717;aspect-ratio:3/4;max-height:68vh}
-    video{display:block;width:100%;height:100%;object-fit:cover;background:#111}
-    .guide{position:absolute;left:8%;right:8%;top:36%;height:28%;border:4px solid rgba(255,255,255,.95);border-radius:22px;box-shadow:0 0 0 999px rgba(0,0,0,.10);pointer-events:none}
-    .guideText{position:absolute;left:0;right:0;bottom:20px;text-align:center;color:#fff;font-weight:800;text-shadow:0 2px 6px #000;padding:0 16px;pointer-events:none}
-    .status{margin:14px 0 0;padding:14px 16px;border-radius:17px;background:#f5f1ec;border:1px solid var(--line);font-weight:650;line-height:1.35}
-    .status.error{background:var(--bad);border-color:var(--badline)}
-    .status.ok{background:var(--ok);border-color:var(--okline)}
-    .row{display:grid;gap:10px;margin-top:12px}
-    button,input{width:100%;border-radius:16px;border:1px solid var(--line);font:inherit;min-height:58px}
-    button{font-weight:850;font-size:18px;cursor:pointer;background:#fff;color:var(--ink)}
-    button.primary{background:var(--red);border-color:var(--red);color:#fff}
-    button:disabled{opacity:.45;cursor:default}
-    .manual{margin-top:18px}
-    label{display:block;font-weight:800;margin:0 0 8px}
-    input{padding:0 16px;font-size:20px;font-weight:750;background:#fff}
-    .result{display:none;margin-top:14px;padding:18px;border-radius:18px;background:var(--ok);border:1px solid var(--okline)}
-    .result.show{display:block}
-    .result small{display:block;color:#5b6a61;margin-bottom:4px;font-weight:700}
-    .code{font-size:28px;font-weight:950;letter-spacing:.04em;overflow-wrap:anywhere}
-    .returnHint{display:none;margin-top:14px;padding:14px 16px;border-radius:17px;background:var(--ok);border:1px solid var(--okline);font-weight:800;line-height:1.4;text-align:center}
-    .returnHint.show{display:block}
-    .note{font-size:13px;color:#7a6e65;margin:14px 2px 0;line-height:1.45}
+    .videoBox{position:relative;overflow:hidden;border-radius:20px;background:#171717;aspect-ratio:3/4;max-height:68vh}video{display:block;width:100%;height:100%;object-fit:cover;background:#111}
+    .guide{position:absolute;left:8%;right:8%;top:36%;height:28%;border:4px solid rgba(255,255,255,.95);border-radius:22px;box-shadow:0 0 0 999px rgba(0,0,0,.10);pointer-events:none}.guideText{position:absolute;left:0;right:0;bottom:20px;text-align:center;color:#fff;font-weight:800;text-shadow:0 2px 6px #000;padding:0 16px;pointer-events:none}
+    .status{margin:14px 0 0;padding:14px 16px;border-radius:17px;background:#f5f1ec;border:1px solid var(--line);font-weight:650;line-height:1.35}.status.error{background:var(--bad);border-color:var(--badline)}.status.ok{background:var(--ok);border-color:var(--okline)}
+    .row{display:grid;gap:10px;margin-top:12px}button,input{width:100%;border-radius:16px;border:1px solid var(--line);font:inherit;min-height:58px}button{font-weight:850;font-size:18px;cursor:pointer;background:#fff;color:var(--ink)}button.primary{background:var(--red);border-color:var(--red);color:#fff}button:disabled{opacity:.45;cursor:default}
+    .manual{margin-top:18px}label{display:block;font-weight:800;margin:0 0 8px}input{padding:0 16px;font-size:20px;font-weight:750;background:#fff}
+    .result{display:none;margin-top:14px;padding:18px;border-radius:18px;background:var(--ok);border:1px solid var(--okline)}.result.show{display:block}.result small{display:block;color:#5b6a61;margin-bottom:4px;font-weight:700}.code{font-size:28px;font-weight:950;letter-spacing:.04em;overflow-wrap:anywhere}
+    .saveBox{display:none;margin-top:14px}.saveBox.show{display:block}.saveBtn{background:var(--red);border-color:var(--red);color:#fff}.hint{margin:10px 2px 0;color:#6e6259;font-size:13px;line-height:1.45;text-align:center}.note{font-size:13px;color:#7a6e65;margin:14px 2px 0;line-height:1.45}
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <div class="brand">Te Pareva L'APP · Scanner live</div>
-    <h1>Scanner barcode</h1>
-    <p class="sub">La fotocamera viene elaborata sul dispositivo. Questa pagina non accede all'inventario e trasmette soltanto il barcode letto al relay temporaneo.</p>
-
-    <section class="card">
-      <div class="videoBox">
-        <video id="preview" playsinline muted autoplay></video>
-        <div class="guide"></div>
-        <div class="guideText">Porta il barcode dentro il riquadro</div>
-      </div>
-
-      <div id="status" class="status">Apertura scanner…</div>
-
-      <div class="row">
-        <button id="startBtn" class="primary" type="button">📷 Avvia camera</button>
-        <button id="stopBtn" type="button" disabled>■ Stop</button>
-      </div>
-
-      <div class="manual">
-        <label for="manualCode">Barcode manuale</label>
-        <input id="manualCode" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="EAN / UPC / CODE-128…">
-        <div class="row"><button id="useManualBtn" type="button">Usa barcode</button></div>
-      </div>
-
-      <div id="result" class="result">
-        <small>Barcode letto</small>
-        <div id="resultCode" class="code"></div>
-      </div>
-
-      <div id="returnHint" class="returnHint">Barcode inviato. Torna a Te Pareva L'APP: appena l'app torna in primo piano recupera automaticamente il codice.</div>
-
-      <p class="note">Scanner host 1.9.3.1 relay. Nessuna scrittura inventario, nessuna immagine salvata.</p>
-    </section>
-  </main>
-
+<main class="wrap">
+  <div class="brand">Te Pareva L'APP · Scanner live</div>
+  <h1>Scanner barcode</h1>
+  <p class="sub">Leggi il barcode, controlla il codice e premi “Salva e torna all'app”. Nessun dato inventario viene modificato da questa pagina.</p>
+  <section class="card">
+    <div class="videoBox"><video id="preview" playsinline muted autoplay></video><div class="guide"></div><div class="guideText">Porta il barcode dentro il riquadro</div></div>
+    <div id="status" class="status">Apertura scanner…</div>
+    <div class="row"><button id="startBtn" class="primary" type="button">📷 Avvia camera</button><button id="stopBtn" type="button" disabled>■ Stop</button></div>
+    <div class="manual"><label for="manualCode">Barcode manuale</label><input id="manualCode" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="EAN / UPC / CODE-128…"><div class="row"><button id="useManualBtn" type="button">Usa barcode</button></div></div>
+    <div id="result" class="result"><small>Barcode letto</small><div id="resultCode" class="code"></div></div>
+    <div id="saveBox" class="saveBox"><button id="saveBtn" class="saveBtn" type="button">✓ Salva e torna a Te Pareva L'APP</button><p id="saveHint" class="hint">Il barcode verrà trasferito all'app. Nessun carico verrà eseguito automaticamente.</p></div>
+    <p class="note">Scanner host 1.9.3.2 · relay one-shot · nessuna immagine salvata.</p>
+  </section>
+</main>
 <script>
 (() => {
   'use strict';
-
-  const RELAY_URL = 'https://script.google.com/macros/s/AKfycbzevOnw-8clxNnKOQUtKrsYPSck_lm9zCFGcL1zJ6-xhxW4oai2456T3FfQ-Nda-xyrOg/exec';
-  const MESSAGE_TYPE = 'TE_PAREVA_BARCODE';
-  const params = new URLSearchParams(window.location.search);
-  const state = String(params.get('state') || '').trim();
-
-  const preview = document.getElementById('preview');
-  const statusEl = document.getElementById('status');
-  const startBtn = document.getElementById('startBtn');
-  const stopBtn = document.getElementById('stopBtn');
-  const manualCode = document.getElementById('manualCode');
-  const useManualBtn = document.getElementById('useManualBtn');
-  const resultBox = document.getElementById('result');
-  const resultCode = document.getElementById('resultCode');
-  const returnHint = document.getElementById('returnHint');
-
-  let reader = null;
-  let controls = null;
-  let scanning = false;
-  let accepted = false;
-  let autoStarting = false;
-
-  function normalize(value) {
-    return String(value || '').trim().replace(/[^0-9A-Za-z]/g, '');
-  }
-
-  function validState(value) {
-    return /^[A-Za-z0-9_-]{16,128}$/.test(String(value || ''));
-  }
-
-  function setStatus(message, type) {
-    statusEl.textContent = message;
-    statusEl.className = 'status' + (type ? ' ' + type : '');
-  }
-
-  function setButtons(active) {
-    startBtn.disabled = active;
-    stopBtn.disabled = !active;
-  }
-
-  function stopTracks() {
-    try {
-      const stream = preview.srcObject;
-      if (stream && stream.getTracks) stream.getTracks().forEach(track => track.stop());
-    } catch (_) {}
-    try { preview.srcObject = null; } catch (_) {}
-  }
-
-  function stopScanner(message) {
-    scanning = false;
-    try { if (controls && typeof controls.stop === 'function') controls.stop(); } catch (_) {}
-    controls = null;
-    stopTracks();
-    setButtons(false);
-    if (message) setStatus(message);
-  }
-
-  function relayUrl(code, origin) {
-    const url = new URL(RELAY_URL);
-    url.searchParams.set('action', 'put');
-    url.searchParams.set('state', state);
-    url.searchParams.set('code', code);
-    url.searchParams.set('origin', origin);
-    url.searchParams.set('_', String(Date.now()));
-    return url.toString();
-  }
-
-  function tryFocusApp() {
-    try {
-      if (window.opener && !window.opener.closed) {
-        window.opener.focus();
-        return true;
-      }
-    } catch (_) {}
-    return false;
-  }
-
-  async function deliverCode(code, origin) {
-    const payload = { type: MESSAGE_TYPE, code, origin, state };
-
-    try {
-      if (window.opener && !window.opener.closed) {
-        window.opener.postMessage(payload, '*');
-      }
-    } catch (_) {}
-
-    if (!validState(state)) {
-      setStatus('Barcode letto, ma manca l’identificatore di ritorno. Chiudi questa schermata e riapri lo scanner dall’app.', 'error');
-      return;
-    }
-
-    setStatus('Barcode letto. Invio a Te Pareva L\'APP…', 'ok');
-
-    try {
-      await fetch(relayUrl(code, origin), {
-        method: 'GET',
-        mode: 'no-cors',
-        cache: 'no-store',
-        credentials: 'omit',
-        keepalive: true
-      });
-
-      setStatus('Barcode inviato correttamente.', 'ok');
-      returnHint.classList.add('show');
-
-      // Su iPhone NON chiudiamo automaticamente la pagina: Safari può lasciare
-      // una scheda nera/vuota quando window.close() chiude l'unica pagina esterna.
-      // Se esiste ancora l'opener proviamo soltanto a riportarlo in primo piano.
-      window.setTimeout(tryFocusApp, 250);
-    } catch (_) {
-      try {
-        const img = new Image();
-        img.referrerPolicy = 'no-referrer';
-        img.src = relayUrl(code, origin);
-        setStatus('Barcode inviato correttamente.', 'ok');
-        returnHint.classList.add('show');
-        window.setTimeout(tryFocusApp, 500);
-      } catch (_) {
-        setStatus('Barcode letto, ma non riesco a inviarlo al relay. Riprova.', 'error');
-      }
-    }
-  }
-
-  function acceptCode(raw, origin) {
-    const code = normalize(raw);
-    if (!code || accepted) return;
-    accepted = true;
-    resultCode.textContent = code;
-    resultBox.classList.add('show');
-    manualCode.value = code;
-    try { navigator.vibrate && navigator.vibrate(120); } catch (_) {}
-    stopScanner();
-    deliverCode(code, origin);
-  }
-
-  async function startScanner(options) {
-    const opts = options || {};
-    autoStarting = !!opts.auto;
-    accepted = false;
-    resultBox.classList.remove('show');
-    returnHint.classList.remove('show');
-
-    if (!window.isSecureContext) {
-      setStatus('Questa pagina non è in un contesto HTTPS sicuro: la camera live non può partire.', 'error');
-      return;
-    }
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setStatus('Questo browser non espone l’accesso alla fotocamera.', 'error');
-      return;
-    }
-    if (!window.ZXingBrowser || !ZXingBrowser.BrowserMultiFormatReader) {
-      setStatus('Decoder barcode non disponibile. Ricarica la pagina e riprova.', 'error');
-      return;
-    }
-
-    stopScanner();
-    accepted = false;
-    setButtons(true);
-    setStatus(autoStarting ? 'Avvio automatico della fotocamera…' : 'Richiesta accesso alla fotocamera…');
-
-    try {
-      reader = new ZXingBrowser.BrowserMultiFormatReader();
-      scanning = true;
-      const constraints = {
-        audio: false,
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        }
-      };
-
-      controls = await reader.decodeFromConstraints(constraints, preview, (result) => {
-        if (!scanning || accepted || !result) return;
-        const text = typeof result.getText === 'function' ? result.getText() : String(result.text || result);
-        acceptCode(text, 'CAMERA LIVE');
-      });
-
-      if (scanning && !accepted) setStatus('Camera attiva. Inquadra il barcode nel riquadro.');
-    } catch (err) {
-      scanning = false;
-      stopTracks();
-      setButtons(false);
-      const name = err && err.name ? err.name : '';
-      if ((name === 'NotAllowedError' || name === 'PermissionDeniedError') && autoStarting) {
-        setStatus('Tocca “Avvia camera” per attivare la fotocamera.', '');
-      } else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-        setStatus('Permesso fotocamera negato dal browser. Consenti la fotocamera per questo sito e riprova.', 'error');
-      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
-        setStatus('Nessuna fotocamera disponibile sul dispositivo.', 'error');
-      } else if (name === 'NotReadableError' || name === 'TrackStartError') {
-        setStatus('La fotocamera è occupata da un’altra app oppure non è disponibile.', 'error');
-      } else {
-        setStatus('Impossibile avviare la fotocamera: ' + (err && err.message ? err.message : 'errore sconosciuto'), 'error');
-      }
-    } finally {
-      autoStarting = false;
-    }
-  }
-
-  startBtn.addEventListener('click', () => startScanner({ auto: false }));
-  stopBtn.addEventListener('click', () => stopScanner('Camera fermata.'));
-  useManualBtn.addEventListener('click', () => {
-    accepted = false;
-    const code = normalize(manualCode.value);
-    if (!code) {
-      setStatus('Inserisci un barcode valido.', 'error');
-      return;
-    }
-    acceptCode(code, 'INSERIMENTO MANUALE');
-  });
-
-  window.addEventListener('pagehide', () => stopScanner());
-  window.addEventListener('beforeunload', () => stopScanner());
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && scanning) stopScanner();
-  });
-
-  // Lo scanner viene aperto dalla pressione dell'utente su “Avvia camera live”
-  // dentro Te Pareva L'APP. Dopo che il permesso è già stato concesso, su iPhone
-  // proviamo ad avviare subito la camera, così normalmente basta un solo tap.
-  if (validState(state)) {
-    window.setTimeout(() => startScanner({ auto: true }), 180);
-  } else {
-    setStatus('Premi “Avvia camera” per richiedere il permesso.');
-  }
+  const RELAY_URL='https://script.google.com/macros/s/AKfycbzevOnw-8clxNnKOQUtKrsYPSck_lm9zCFGcL1zJ6-xhxW4oai2456T3FfQ-Nda-xyrOg/exec';
+  const params=new URLSearchParams(location.search); const state=String(params.get('state')||'').trim();
+  const preview=document.getElementById('preview'),statusEl=document.getElementById('status'),startBtn=document.getElementById('startBtn'),stopBtn=document.getElementById('stopBtn'),manualCode=document.getElementById('manualCode'),useManualBtn=document.getElementById('useManualBtn'),resultBox=document.getElementById('result'),resultCode=document.getElementById('resultCode'),saveBox=document.getElementById('saveBox'),saveBtn=document.getElementById('saveBtn'),saveHint=document.getElementById('saveHint');
+  let controls=null,scanning=false,pendingCode='',pendingOrigin='';
+  const normalize=v=>String(v||'').trim().replace(/[^0-9A-Za-z]/g,'');
+  const validState=v=>/^[A-Za-z0-9_-]{16,128}$/.test(String(v||''));
+  function setStatus(m,t){statusEl.textContent=m;statusEl.className='status'+(t?' '+t:'')}
+  function setButtons(active){startBtn.disabled=active;stopBtn.disabled=!active}
+  function stopTracks(){try{const s=preview.srcObject;if(s&&s.getTracks)s.getTracks().forEach(t=>t.stop())}catch(_){}try{preview.srcObject=null}catch(_){}}
+  function stopScanner(message){scanning=false;try{if(controls&&typeof controls.stop==='function')controls.stop()}catch(_){}controls=null;stopTracks();setButtons(false);if(message)setStatus(message)}
+  function relayUrl(code,origin){const u=new URL(RELAY_URL);u.searchParams.set('action','put');u.searchParams.set('state',state);u.searchParams.set('code',code);u.searchParams.set('origin',origin);u.searchParams.set('_',String(Date.now()));return u.toString()}
+  function acceptCode(raw,origin){const code=normalize(raw);if(!code)return;pendingCode=code;pendingOrigin=origin;resultCode.textContent=code;resultBox.classList.add('show');manualCode.value=code;saveBox.classList.add('show');try{navigator.vibrate&&navigator.vibrate(120)}catch(_){}stopScanner();setStatus('Barcode letto. Controlla il codice e premi “Salva e torna all\'app”.','ok')}
+  async function startScanner(){pendingCode='';pendingOrigin='';resultBox.classList.remove('show');saveBox.classList.remove('show');if(!window.isSecureContext){setStatus('Pagina non HTTPS: camera non disponibile.','error');return}if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){setStatus('Fotocamera non disponibile in questo browser.','error');return}if(!window.ZXingBrowser||!ZXingBrowser.BrowserMultiFormatReader){setStatus('Decoder barcode non disponibile. Ricarica la pagina.','error');return}stopScanner();setButtons(true);setStatus('Avvio fotocamera…');try{const reader=new ZXingBrowser.BrowserMultiFormatReader();scanning=true;controls=await reader.decodeFromConstraints({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}},preview,result=>{if(!scanning||!result)return;const text=typeof result.getText==='function'?result.getText():String(result.text||result);acceptCode(text,'CAMERA LIVE')});if(scanning)setStatus('Camera attiva. Inquadra il barcode nel riquadro.')}catch(err){stopTracks();setButtons(false);const n=err&&err.name?err.name:'';if(n==='NotAllowedError'||n==='PermissionDeniedError')setStatus('Permesso fotocamera negato. Consenti la fotocamera e riprova.','error');else setStatus('Impossibile avviare la fotocamera: '+(err&&err.message?err.message:'errore sconosciuto'),'error')}}
+  function saveAndReturn(){if(!pendingCode){setStatus('Prima leggi o inserisci un barcode.','error');return}if(!validState(state)){setStatus('Sessione di ritorno non valida. Chiudi questa schermata e riapri lo scanner dall\'app.','error');return}saveBtn.disabled=true;saveBtn.textContent='Salvataggio…';setStatus('Trasferimento barcode a Te Pareva L\'APP…','ok');try{fetch(relayUrl(pendingCode,pendingOrigin||'CAMERA LIVE'),{method:'GET',mode:'no-cors',cache:'no-store',credentials:'omit',keepalive:true}).catch(()=>{});try{if(window.opener&&!window.opener.closed)window.opener.postMessage({type:'TE_PAREVA_BARCODE',code:pendingCode,origin:pendingOrigin||'CAMERA LIVE',state},'*')}catch(_){};window.close();setTimeout(()=>{if(!window.closed){saveBtn.disabled=false;saveBtn.textContent='✓ Barcode salvato — chiudi questa schermata';saveHint.textContent='Il codice è stato inviato. Se questa finestra non si chiude da sola, tocca la X del browser in alto per tornare all\'app.';setStatus('Barcode inviato correttamente.','ok')}},500)}catch(_){saveBtn.disabled=false;saveBtn.textContent='✓ Salva e torna a Te Pareva L\'APP';setStatus('Non riesco a inviare il barcode. Riprova.','error')}}
+  startBtn.addEventListener('click',startScanner);stopBtn.addEventListener('click',()=>stopScanner('Camera fermata.'));useManualBtn.addEventListener('click',()=>acceptCode(manualCode.value,'INSERIMENTO MANUALE'));saveBtn.addEventListener('click',saveAndReturn);window.addEventListener('pagehide',()=>stopScanner());window.addEventListener('beforeunload',()=>stopScanner());document.addEventListener('visibilitychange',()=>{if(document.hidden&&scanning)stopScanner()});
+  setTimeout(()=>startScanner(),120);
 })();
 </script>
 </body>
