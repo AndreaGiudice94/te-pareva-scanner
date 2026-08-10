@@ -35,6 +35,8 @@
     .result.show{display:block}
     .result small{display:block;color:#5b6a61;margin-bottom:4px;font-weight:700}
     .code{font-size:28px;font-weight:950;letter-spacing:.04em;overflow-wrap:anywhere}
+    .returnHint{display:none;margin-top:14px;padding:14px 16px;border-radius:17px;background:var(--ok);border:1px solid var(--okline);font-weight:800;line-height:1.4;text-align:center}
+    .returnHint.show{display:block}
     .note{font-size:13px;color:#7a6e65;margin:14px 2px 0;line-height:1.45}
   </style>
 </head>
@@ -51,7 +53,7 @@
         <div class="guideText">Porta il barcode dentro il riquadro</div>
       </div>
 
-      <div id="status" class="status">Premi “Avvia camera” per richiedere il permesso.</div>
+      <div id="status" class="status">Apertura scanner…</div>
 
       <div class="row">
         <button id="startBtn" class="primary" type="button">📷 Avvia camera</button>
@@ -69,7 +71,9 @@
         <div id="resultCode" class="code"></div>
       </div>
 
-      <p class="note">Scanner host 1.9.3 relay. Nessuna scrittura inventario, nessuna immagine salvata.</p>
+      <div id="returnHint" class="returnHint">Barcode inviato. Torna a Te Pareva L'APP: appena l'app torna in primo piano recupera automaticamente il codice.</div>
+
+      <p class="note">Scanner host 1.9.3.1 relay. Nessuna scrittura inventario, nessuna immagine salvata.</p>
     </section>
   </main>
 
@@ -90,11 +94,13 @@
   const useManualBtn = document.getElementById('useManualBtn');
   const resultBox = document.getElementById('result');
   const resultCode = document.getElementById('resultCode');
+  const returnHint = document.getElementById('returnHint');
 
   let reader = null;
   let controls = null;
   let scanning = false;
   let accepted = false;
+  let autoStarting = false;
 
   function normalize(value) {
     return String(value || '').trim().replace(/[^0-9A-Za-z]/g, '');
@@ -141,6 +147,16 @@
     return url.toString();
   }
 
+  function tryFocusApp() {
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.focus();
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   async function deliverCode(code, origin) {
     const payload = { type: MESSAGE_TYPE, code, origin, state };
 
@@ -166,21 +182,21 @@
         keepalive: true
       });
 
-      setStatus('Barcode inviato. Ritorna a Te Pareva L\'APP.', 'ok');
+      setStatus('Barcode inviato correttamente.', 'ok');
+      returnHint.classList.add('show');
 
-      window.setTimeout(() => {
-        try { window.close(); } catch (_) {}
-      }, 450);
+      // Su iPhone NON chiudiamo automaticamente la pagina: Safari può lasciare
+      // una scheda nera/vuota quando window.close() chiude l'unica pagina esterna.
+      // Se esiste ancora l'opener proviamo soltanto a riportarlo in primo piano.
+      window.setTimeout(tryFocusApp, 250);
     } catch (_) {
-      // Fallback: una richiesta immagine no-CORS esegue comunque il GET del relay.
       try {
         const img = new Image();
         img.referrerPolicy = 'no-referrer';
         img.src = relayUrl(code, origin);
-        setStatus('Barcode inviato. Ritorna a Te Pareva L\'APP.', 'ok');
-        window.setTimeout(() => {
-          try { window.close(); } catch (_) {}
-        }, 700);
+        setStatus('Barcode inviato correttamente.', 'ok');
+        returnHint.classList.add('show');
+        window.setTimeout(tryFocusApp, 500);
       } catch (_) {
         setStatus('Barcode letto, ma non riesco a inviarlo al relay. Riprova.', 'error');
       }
@@ -199,9 +215,12 @@
     deliverCode(code, origin);
   }
 
-  async function startScanner() {
+  async function startScanner(options) {
+    const opts = options || {};
+    autoStarting = !!opts.auto;
     accepted = false;
     resultBox.classList.remove('show');
+    returnHint.classList.remove('show');
 
     if (!window.isSecureContext) {
       setStatus('Questa pagina non è in un contesto HTTPS sicuro: la camera live non può partire.', 'error');
@@ -219,7 +238,7 @@
     stopScanner();
     accepted = false;
     setButtons(true);
-    setStatus('Richiesta accesso alla fotocamera…');
+    setStatus(autoStarting ? 'Avvio automatico della fotocamera…' : 'Richiesta accesso alla fotocamera…');
 
     try {
       reader = new ZXingBrowser.BrowserMultiFormatReader();
@@ -245,7 +264,9 @@
       stopTracks();
       setButtons(false);
       const name = err && err.name ? err.name : '';
-      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+      if ((name === 'NotAllowedError' || name === 'PermissionDeniedError') && autoStarting) {
+        setStatus('Tocca “Avvia camera” per attivare la fotocamera.', '');
+      } else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
         setStatus('Permesso fotocamera negato dal browser. Consenti la fotocamera per questo sito e riprova.', 'error');
       } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
         setStatus('Nessuna fotocamera disponibile sul dispositivo.', 'error');
@@ -254,10 +275,12 @@
       } else {
         setStatus('Impossibile avviare la fotocamera: ' + (err && err.message ? err.message : 'errore sconosciuto'), 'error');
       }
+    } finally {
+      autoStarting = false;
     }
   }
 
-  startBtn.addEventListener('click', startScanner);
+  startBtn.addEventListener('click', () => startScanner({ auto: false }));
   stopBtn.addEventListener('click', () => stopScanner('Camera fermata.'));
   useManualBtn.addEventListener('click', () => {
     accepted = false;
@@ -274,6 +297,15 @@
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && scanning) stopScanner();
   });
+
+  // Lo scanner viene aperto dalla pressione dell'utente su “Avvia camera live”
+  // dentro Te Pareva L'APP. Dopo che il permesso è già stato concesso, su iPhone
+  // proviamo ad avviare subito la camera, così normalmente basta un solo tap.
+  if (validState(state)) {
+    window.setTimeout(() => startScanner({ auto: true }), 180);
+  } else {
+    setStatus('Premi “Avvia camera” per richiedere il permesso.');
+  }
 })();
 </script>
 </body>
