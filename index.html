@@ -33,27 +33,228 @@
     <div class="manual"><label for="manualCode">Barcode manuale</label><input id="manualCode" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="EAN / UPC / CODE-128…"><div class="row"><button id="useManualBtn" type="button">Usa barcode</button></div></div>
     <div id="result" class="result"><small>Barcode letto</small><div id="resultCode" class="code"></div></div>
     <div id="saveBox" class="saveBox"><button id="saveBtn" class="saveBtn" type="button">✓ Salva e torna a Te Pareva L'APP</button><p id="saveHint" class="hint">Il barcode verrà trasferito all'app. Nessun carico verrà eseguito automaticamente.</p></div>
-    <p class="note">Scanner host 1.9.4 · top-navigation relay · nessuna immagine salvata.</p>
+    <p class="note">Scanner host 1.9.7a · lettura 1D stabilizzata · top-navigation relay · nessuna immagine salvata.</p>
   </section>
 </main>
 <script>
 (() => {
   'use strict';
+
   const RELAY_URL='https://script.google.com/macros/s/AKfycbzevOnw-8clxNnKOQUtKrsYPSck_lm9zCFGcL1zJ6-xhxW4oai2456T3FfQ-Nda-xyrOg/exec';
-  const params=new URLSearchParams(location.search); const state=String(params.get('state')||'').trim();
-  const preview=document.getElementById('preview'),statusEl=document.getElementById('status'),startBtn=document.getElementById('startBtn'),stopBtn=document.getElementById('stopBtn'),manualCode=document.getElementById('manualCode'),useManualBtn=document.getElementById('useManualBtn'),resultBox=document.getElementById('result'),resultCode=document.getElementById('resultCode'),saveBox=document.getElementById('saveBox'),saveBtn=document.getElementById('saveBtn'),saveHint=document.getElementById('saveHint');
-  let controls=null,scanning=false,pendingCode='',pendingOrigin='';
+  const CONFIRM_HITS=2;
+  const CONFIRM_WINDOW_MS=1300;
+  const params=new URLSearchParams(location.search);
+  const state=String(params.get('state')||'').trim();
+  const preview=document.getElementById('preview');
+  const statusEl=document.getElementById('status');
+  const startBtn=document.getElementById('startBtn');
+  const stopBtn=document.getElementById('stopBtn');
+  const manualCode=document.getElementById('manualCode');
+  const useManualBtn=document.getElementById('useManualBtn');
+  const resultBox=document.getElementById('result');
+  const resultCode=document.getElementById('resultCode');
+  const saveBox=document.getElementById('saveBox');
+  const saveBtn=document.getElementById('saveBtn');
+  const saveHint=document.getElementById('saveHint');
+
+  let controls=null;
+  let scanning=false;
+  let pendingCode='';
+  let pendingOrigin='';
+  let candidateCode='';
+  let candidateHits=0;
+  let candidateSeenAt=0;
+
   const normalize=v=>String(v||'').trim().replace(/[^0-9A-Za-z]/g,'');
   const validState=v=>/^[A-Za-z0-9_-]{16,128}$/.test(String(v||''));
-  function setStatus(m,t){statusEl.textContent=m;statusEl.className='status'+(t?' '+t:'')}
-  function setButtons(active){startBtn.disabled=active;stopBtn.disabled=!active}
-  function stopTracks(){try{const s=preview.srcObject;if(s&&s.getTracks)s.getTracks().forEach(t=>t.stop())}catch(_){}try{preview.srcObject=null}catch(_){}}
-  function stopScanner(message){scanning=false;try{if(controls&&typeof controls.stop==='function')controls.stop()}catch(_){}controls=null;stopTracks();setButtons(false);if(message)setStatus(message)}
-  function relayUrl(code,origin){const u=new URL(RELAY_URL);u.searchParams.set('action','put');u.searchParams.set('state',state);u.searchParams.set('code',code);u.searchParams.set('origin',origin);u.searchParams.set('_',String(Date.now()));return u.toString()}
-  function acceptCode(raw,origin){const code=normalize(raw);if(!code)return;pendingCode=code;pendingOrigin=origin;resultCode.textContent=code;resultBox.classList.add('show');manualCode.value=code;saveBox.classList.add('show');try{navigator.vibrate&&navigator.vibrate(120)}catch(_){}stopScanner();setStatus('Barcode letto. Controlla il codice e premi “Salva e torna all\'app”.','ok')}
-  async function startScanner(){pendingCode='';pendingOrigin='';resultBox.classList.remove('show');saveBox.classList.remove('show');if(!window.isSecureContext){setStatus('Pagina non HTTPS: camera non disponibile.','error');return}if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){setStatus('Fotocamera non disponibile in questo browser.','error');return}if(!window.ZXingBrowser||!ZXingBrowser.BrowserMultiFormatReader){setStatus('Decoder barcode non disponibile. Ricarica la pagina.','error');return}stopScanner();setButtons(true);setStatus('Avvio fotocamera…');try{const reader=new ZXingBrowser.BrowserMultiFormatReader();scanning=true;controls=await reader.decodeFromConstraints({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}},preview,result=>{if(!scanning||!result)return;const text=typeof result.getText==='function'?result.getText():String(result.text||result);acceptCode(text,'CAMERA LIVE')});if(scanning)setStatus('Camera attiva. Inquadra il barcode nel riquadro.')}catch(err){stopTracks();setButtons(false);const n=err&&err.name?err.name:'';if(n==='NotAllowedError'||n==='PermissionDeniedError')setStatus('Permesso fotocamera negato. Consenti la fotocamera e riprova.','error');else setStatus('Impossibile avviare la fotocamera: '+(err&&err.message?err.message:'errore sconosciuto'),'error')}}
-  async function saveAndReturn(){if(!pendingCode){setStatus('Prima leggi o inserisci un barcode.','error');return}if(!validState(state)){setStatus('Sessione di ritorno non valida. Chiudi questa schermata e riapri lo scanner dall\'app.','error');return}saveBtn.disabled=true;saveBtn.textContent='Salvataggio…';setStatus('Trasferimento barcode a Te Pareva L\'APP…','ok');try{await fetch(relayUrl(pendingCode,pendingOrigin||'CAMERA LIVE'),{method:'GET',mode:'no-cors',cache:'no-store',credentials:'omit',keepalive:true});setStatus('Barcode inviato. Ritorno a Te Pareva L\'APP…','ok');saveHint.textContent='Codice trasferito. Sto tornando all\'app…';window.setTimeout(()=>{if(window.history.length>1){window.history.back();return}saveBtn.disabled=false;saveBtn.textContent='✓ Barcode salvato';saveHint.textContent='Il codice è stato inviato. Chiudi questa schermata con la X del browser per tornare all\'app.'},180)}catch(_){saveBtn.disabled=false;saveBtn.textContent='✓ Salva e torna a Te Pareva L\'APP';setStatus('Non riesco a inviare il barcode. Riprova.','error')}}
-  startBtn.addEventListener('click',startScanner);stopBtn.addEventListener('click',()=>stopScanner('Camera fermata.'));useManualBtn.addEventListener('click',()=>acceptCode(manualCode.value,'INSERIMENTO MANUALE'));saveBtn.addEventListener('click',saveAndReturn);window.addEventListener('pagehide',()=>stopScanner());window.addEventListener('beforeunload',()=>stopScanner());document.addEventListener('visibilitychange',()=>{if(document.hidden&&scanning)stopScanner()});
+  const plausibleCode=code=>/^[0-9A-Za-z]{3,64}$/.test(String(code||''));
+
+  function setStatus(message,type){
+    statusEl.textContent=message;
+    statusEl.className='status'+(type?' '+type:'');
+  }
+
+  function setButtons(active){
+    startBtn.disabled=active;
+    stopBtn.disabled=!active;
+  }
+
+  function resetCandidate(){
+    candidateCode='';
+    candidateHits=0;
+    candidateSeenAt=0;
+  }
+
+  function stopTracks(){
+    try{
+      const stream=preview.srcObject;
+      if(stream&&stream.getTracks)stream.getTracks().forEach(track=>track.stop());
+    }catch(_){}
+    try{preview.srcObject=null;}catch(_){}
+  }
+
+  function stopScanner(message){
+    scanning=false;
+    try{if(controls&&typeof controls.stop==='function')controls.stop();}catch(_){}
+    controls=null;
+    stopTracks();
+    setButtons(false);
+    resetCandidate();
+    if(message)setStatus(message);
+  }
+
+  function relayUrl(code,origin){
+    const url=new URL(RELAY_URL);
+    url.searchParams.set('action','put');
+    url.searchParams.set('state',state);
+    url.searchParams.set('code',code);
+    url.searchParams.set('origin',origin);
+    url.searchParams.set('_',String(Date.now()));
+    return url.toString();
+  }
+
+  function acceptCode(raw,origin){
+    const code=normalize(raw);
+    if(!plausibleCode(code))return;
+    pendingCode=code;
+    pendingOrigin=origin;
+    resultCode.textContent=code;
+    resultBox.classList.add('show');
+    manualCode.value=code;
+    saveBox.classList.add('show');
+    try{navigator.vibrate&&navigator.vibrate(120);}catch(_){}
+    stopScanner();
+    setStatus('Barcode letto. Controlla il codice e premi “Salva e torna all\'app”.','ok');
+  }
+
+  function acceptCameraCandidate(raw){
+    const code=normalize(raw);
+    if(!plausibleCode(code))return;
+
+    const now=Date.now();
+    if(code===candidateCode && now-candidateSeenAt<=CONFIRM_WINDOW_MS){
+      candidateHits+=1;
+    }else{
+      candidateCode=code;
+      candidateHits=1;
+    }
+    candidateSeenAt=now;
+
+    if(candidateHits<CONFIRM_HITS){
+      setStatus('Codice rilevato, lo sto verificando…');
+      return;
+    }
+
+    acceptCode(code,'CAMERA LIVE');
+  }
+
+  async function startScanner(){
+    pendingCode='';
+    pendingOrigin='';
+    resetCandidate();
+    resultBox.classList.remove('show');
+    saveBox.classList.remove('show');
+
+    if(!window.isSecureContext){
+      setStatus('Pagina non HTTPS: camera non disponibile.','error');
+      return;
+    }
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      setStatus('Fotocamera non disponibile in questo browser.','error');
+      return;
+    }
+    if(!window.ZXingBrowser||(!ZXingBrowser.BrowserMultiFormatOneDReader&&!ZXingBrowser.BrowserMultiFormatReader)){
+      setStatus('Decoder barcode non disponibile. Ricarica la pagina.','error');
+      return;
+    }
+
+    stopScanner();
+    setButtons(true);
+    setStatus('Avvio fotocamera…');
+
+    try{
+      const ReaderClass=ZXingBrowser.BrowserMultiFormatOneDReader||ZXingBrowser.BrowserMultiFormatReader;
+      const reader=new ReaderClass();
+      scanning=true;
+      controls=await reader.decodeFromConstraints(
+        {
+          audio:false,
+          video:{
+            facingMode:{ideal:'environment'},
+            width:{ideal:1280},
+            height:{ideal:720},
+            frameRate:{ideal:30,max:30}
+          }
+        },
+        preview,
+        result=>{
+          if(!scanning||!result)return;
+          const text=typeof result.getText==='function'?result.getText():String(result.text||result);
+          acceptCameraCandidate(text);
+        }
+      );
+      if(scanning)setStatus('Camera attiva. Inquadra un solo barcode nel riquadro.');
+    }catch(err){
+      stopTracks();
+      setButtons(false);
+      resetCandidate();
+      const name=err&&err.name?err.name:'';
+      if(name==='NotAllowedError'||name==='PermissionDeniedError'){
+        setStatus('Permesso fotocamera negato. Consenti la fotocamera e riprova.','error');
+      }else{
+        setStatus('Impossibile avviare la fotocamera: '+(err&&err.message?err.message:'errore sconosciuto'),'error');
+      }
+    }
+  }
+
+  async function saveAndReturn(){
+    if(!pendingCode){
+      setStatus('Prima leggi o inserisci un barcode.','error');
+      return;
+    }
+    if(!validState(state)){
+      setStatus('Sessione di ritorno non valida. Chiudi questa schermata e riapri lo scanner dall\'app.','error');
+      return;
+    }
+
+    saveBtn.disabled=true;
+    saveBtn.textContent='Salvataggio…';
+    setStatus('Trasferimento barcode a Te Pareva L\'APP…','ok');
+
+    try{
+      await fetch(relayUrl(pendingCode,pendingOrigin||'CAMERA LIVE'),{
+        method:'GET',
+        mode:'no-cors',
+        cache:'no-store',
+        credentials:'omit',
+        keepalive:true
+      });
+      setStatus('Barcode inviato. Ritorno a Te Pareva L\'APP…','ok');
+      saveHint.textContent='Codice trasferito. Sto tornando all\'app…';
+      window.setTimeout(()=>{
+        if(window.history.length>1){
+          window.history.back();
+          return;
+        }
+        saveBtn.disabled=false;
+        saveBtn.textContent='✓ Barcode salvato';
+        saveHint.textContent='Il codice è stato inviato. Chiudi questa schermata con la X del browser per tornare all\'app.';
+      },180);
+    }catch(_){
+      saveBtn.disabled=false;
+      saveBtn.textContent='✓ Salva e torna a Te Pareva L\'APP';
+      setStatus('Non riesco a inviare il barcode. Riprova.','error');
+    }
+  }
+
+  startBtn.addEventListener('click',startScanner);
+  stopBtn.addEventListener('click',()=>stopScanner('Camera fermata.'));
+  useManualBtn.addEventListener('click',()=>acceptCode(manualCode.value,'INSERIMENTO MANUALE'));
+  saveBtn.addEventListener('click',saveAndReturn);
+  window.addEventListener('pagehide',()=>stopScanner());
+  window.addEventListener('beforeunload',()=>stopScanner());
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&scanning)stopScanner();});
+
   setTimeout(()=>startScanner(),120);
 })();
 </script>
